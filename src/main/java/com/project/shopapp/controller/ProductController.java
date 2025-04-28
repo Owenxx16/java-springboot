@@ -1,0 +1,104 @@
+package com.project.shopapp.controller;
+
+import com.project.shopapp.dto.CategoryDTO;
+import com.project.shopapp.dto.ProductDTO;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("api/v1/products")
+public class ProductController {
+    @GetMapping()
+    public ResponseEntity<String> getAllProducts(@RequestParam("page") int page, @RequestParam("limit") int limit) {
+        return ResponseEntity.ok(String.format("Hello World, page = %d, limit = %d", page, limit));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<String> getProductById(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(String.format("Hello World, id = %d", id));
+    }
+    // Thêm request upload file ảnh
+    @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> createProduct(@Valid @ModelAttribute ProductDTO productDTO,
+                                           BindingResult bindingResult
+                                           //@RequestPart("file") MultipartFile file
+    ) {
+        try{
+        if (bindingResult.hasErrors()) {
+            List<String> errorMessage = bindingResult.getFieldErrors()
+                    .stream()
+                    .map(fieldError -> fieldError.getDefaultMessage())
+                    .toList();
+            return ResponseEntity.badRequest().body(errorMessage);
+        }
+        MultipartFile file = productDTO.getFile();
+        if (file != null){
+            // Kiểm tra kích thước & định dạng của file
+            if (file.getSize() > 10 * 1024 * 1024) {
+                return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                        .body("file is too large! Maxium size is 10MB");
+            }
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body("File must be an image");
+            }
+            // Lưu file và cập nhật thumbnail vào trong DTO
+            String fileName = storeFile(file);
+            // lưu vào đối tượng product trong DB -> Do it after
+        }
+        return ResponseEntity.ok("Product created successly");
+    }catch (Exception e){
+        return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    private String storeFile(MultipartFile file) throws IOException {
+        String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+        // Thêm UUID vào trước mỗi hình để tránh việc ghì đè bởi hình ảnh có tên giống nhau mà nội dung khác nhau
+        String uniqueName = UUID.randomUUID().toString() + "_" + fileName;
+        // Thêm đường dẫn đến thư mục muốn lưu file
+        Path uploadDir = Paths.get("uploads");
+        // Kiểm tra thư mục uploadDir đã tồn tại hay chưa nếu chưa thì tạo
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);
+        }
+        // Đường dẫn đầy đủ đến file
+        Path destination = Paths.get(uploadDir.toString(), uniqueName);
+        // Copy file vào thư mục
+        Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
+        return uniqueName;
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<String> updateProduct(@PathVariable Long id){
+        return ResponseEntity.ok(String.format("Product with id = %d", id));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<String> deleteProduct(@PathVariable Long id){
+        return ResponseEntity.ok(String.format("Product with id = %d deleted", id));
+    }
+}
+
+//{
+//        "name": "MacBook pro m1 2025",
+//        "price": 30000000,
+//        "thumbnail": "",
+//        "description": "The best laptop in 2025",
+//        "category_id": 1
+//        }
