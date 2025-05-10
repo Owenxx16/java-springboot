@@ -2,7 +2,12 @@ package com.project.shopapp.controller;
 
 import com.project.shopapp.dto.CategoryDTO;
 import com.project.shopapp.dto.ProductDTO;
+import com.project.shopapp.dto.ProductImageDTO;
+import com.project.shopapp.model.ProductImage;
+import com.project.shopapp.model.Products;
+import com.project.shopapp.service.IProductService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +28,11 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("api/v1/products")
+@RequiredArgsConstructor
 public class ProductController {
+
+    private final IProductService productService;
+
     @GetMapping()
     public ResponseEntity<String> getAllProducts(@RequestParam("page") int page, @RequestParam("limit") int limit) {
         return ResponseEntity.ok(String.format("Hello World, page = %d, limit = %d", page, limit));
@@ -47,6 +56,7 @@ public class ProductController {
                     .toList();
             return ResponseEntity.badRequest().body(errorMessage);
         }
+        Products newProduct = productService.addProduct(productDTO);
         List<MultipartFile> files = productDTO.getFile();
         // Nếu không có hình thì null
             files = files == null ? new ArrayList<MultipartFile>() : files;
@@ -67,6 +77,9 @@ public class ProductController {
                 String fileName = storeFile(file);
                 // lưu vào đối tượng product trong DB -> Do it after
                 // lưu vào bảng product_image
+                ProductImage productImage = productService.createProductImage(newProduct.getId(),ProductImageDTO.builder()
+                        .image_url(fileName)
+                        .build());
             }
 
         return ResponseEntity.ok("Product created successly");

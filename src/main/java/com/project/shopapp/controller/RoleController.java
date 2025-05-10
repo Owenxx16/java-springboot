@@ -1,6 +1,7 @@
 package com.project.shopapp.controller;
 
 import com.project.shopapp.model.Role;
+import com.project.shopapp.service.IRoleService;
 import com.project.shopapp.service.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +13,7 @@ import java.util.List;
 @RequestMapping("${api.prefix}/roles")
 @RequiredArgsConstructor
 public class RoleController {
-    private final RoleService roleService;
+    private final IRoleService roleService;
 
     @PostMapping("")
     public ResponseEntity<?> createRole(@RequestBody Role role) {

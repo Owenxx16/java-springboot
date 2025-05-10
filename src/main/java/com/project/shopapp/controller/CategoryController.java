@@ -3,6 +3,7 @@ package com.project.shopapp.controller;
 import com.project.shopapp.dto.CategoryDTO;
 import com.project.shopapp.model.Category;
 import com.project.shopapp.service.CategoryService;
+import com.project.shopapp.service.ICategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 //@Validated
 public class CategoryController {
-    private final CategoryService categoryService;
+    private final ICategoryService categoryService;
 
     @PostMapping("")
     public ResponseEntity<?> createCategory(@Valid @RequestBody CategoryDTO categoryDTO, BindingResult bindingResult) {
