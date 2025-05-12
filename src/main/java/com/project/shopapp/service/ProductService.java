@@ -12,16 +12,19 @@ import com.project.shopapp.respository.ProductRespository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 
 import java.security.InvalidParameterException;
 import java.util.Optional;
 
+@Service
 @RequiredArgsConstructor
 public class ProductService implements IProductService{
 
     private final ProductRespository productRespository;
     private final CategoryRespository categoryRespository;
     private final ProductImageRespository productImageRespository;
+
     @Override
     public Products addProduct(ProductDTO productDTO) throws DataNotFoundException {
        Category existCategory = categoryRespository.findById( productDTO.getCategoryId())
@@ -30,6 +33,7 @@ public class ProductService implements IProductService{
                 .name(productDTO.getName())
                 .price(productDTO.getPrice())
                 .thumbnail(productDTO.getThumbnail())
+                .description(productDTO.getDescription())
                 .categoryId(existCategory)
                 .build();
         return productRespository.save(products);
@@ -71,19 +75,25 @@ public class ProductService implements IProductService{
         return productRespository.existsByName(name);
     }
     @Override
-    public ProductImage createProductImage(Long id, ProductImageDTO productImageDTO) throws DataNotFoundException {
-        Products existingProducts = productRespository.findById(productImageDTO.getProducts_id()).orElseThrow(
-                () -> new DataNotFoundException("khong tim thay Product Id" + productImageDTO.getProducts_id())
-        );
+    public ProductImage createProductImage(Long productId, ProductImageDTO productImageDTO) throws DataNotFoundException {
+        // Lấy entity Products theo productId
+        Products existingProduct = productRespository.findById(productId)
+                .orElseThrow(() -> new DataNotFoundException("Không tìm thấy Product Id " + productId));
+
+        // Kiểm tra số lượng ảnh đã lưu
+
+
+        // Tạo đối tượng ProductImage và gán lại trường product
         ProductImage productImage = ProductImage.builder()
-                .products_id(existingProducts)
+                .product(existingProduct)
                 .image_url(productImageDTO.getImage_url())
                 .build();
-        // Khong cho insert qua 5 anh trong 1 product
-        int size = productImageRespository.findByProductId(id).size();
-        if (size >= 5) {
+
+        int size = productImageRespository.findByProductId(productId).size();
+        if (size >= ProductImage.MAXIMUM_IMAGES_PER_PRODUCT) {
             throw new InvalidParameterException("Number of image must be <= 5");
         }
+
         return productImageRespository.save(productImage);
     }
 }

@@ -3,9 +3,11 @@ package com.project.shopapp.controller;
 import com.project.shopapp.dto.CategoryDTO;
 import com.project.shopapp.dto.ProductDTO;
 import com.project.shopapp.dto.ProductImageDTO;
+import com.project.shopapp.exceptions.DataNotFoundException;
 import com.project.shopapp.model.ProductImage;
 import com.project.shopapp.model.Products;
 import com.project.shopapp.service.IProductService;
+import com.project.shopapp.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,7 +32,6 @@ import java.util.UUID;
 @RequestMapping("api/v1/products")
 @RequiredArgsConstructor
 public class ProductController {
-
     private final IProductService productService;
 
     @GetMapping()
@@ -39,12 +40,19 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<String> getProductById(@PathVariable("id") Long id) {
-        return ResponseEntity.ok(String.format("Hello World, id = %d", id));
+    public ResponseEntity<?> getProductById(@PathVariable("id") Long id) {
+        try {
+            Products products = productService.getProductsById(id);
+            return ResponseEntity.ok(products);
+        } catch (DataNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
     }
     // Thêm request upload file ảnh
-    @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> createProduct(@Valid @ModelAttribute ProductDTO productDTO,
+    @PostMapping(value = "") //, consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    public ResponseEntity<?> createProduct(@Valid @RequestBody ProductDTO productDTO,
+                                           // @ModelAttribute("files") List<MultipartFile> files,
                                            BindingResult bindingResult
                                            //@RequestPart("file") MultipartFile file
     ) {
@@ -57,10 +65,22 @@ public class ProductController {
             return ResponseEntity.badRequest().body(errorMessage);
         }
         Products newProduct = productService.addProduct(productDTO);
-        List<MultipartFile> files = productDTO.getFile();
+        return ResponseEntity.ok(newProduct);
+    }catch (Exception e){
+        return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    @PostMapping(value = "uploads/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadImage(@PathVariable("id") Long productId,@ModelAttribute("files") List<MultipartFile> files) throws IOException {
         // Nếu không có hình thì null
+        try {
+            Products existingProduct = productService.getProductsById(productId);
             files = files == null ? new ArrayList<MultipartFile>() : files;
-        for (MultipartFile file : files) {
+            if(files.size() >= ProductImage.MAXIMUM_IMAGES_PER_PRODUCT){
+                return ResponseEntity.badRequest().body("You can only upload more than 5 images");
+            }
+            List<ProductImage> productImages = new ArrayList<>();
+            for (MultipartFile file : files) {
                 if (file.getSize() == 0){
                     continue;
                 }
@@ -77,14 +97,15 @@ public class ProductController {
                 String fileName = storeFile(file);
                 // lưu vào đối tượng product trong DB -> Do it after
                 // lưu vào bảng product_image
-                ProductImage productImage = productService.createProductImage(newProduct.getId(),ProductImageDTO.builder()
+                ProductImage productImage = productService.createProductImage(existingProduct.getId(),
+                        ProductImageDTO.builder()
                         .image_url(fileName)
                         .build());
+                productImages.add(productImage);
             }
-
-        return ResponseEntity.ok("Product created successly");
-    }catch (Exception e){
-        return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.ok(productImages);
+        } catch (DataNotFoundException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 

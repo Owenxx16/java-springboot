@@ -28,5 +28,5 @@ public class ProductDTO {
     private String description;
     @JsonProperty("category_id") // thay vì trong POSTMAN là categoryId thì sẽ thành category_id
     private Long categoryId;
-    private List<MultipartFile> file;
+    // private List<MultipartFile> file;
 }
