@@ -6,10 +6,15 @@ import com.project.shopapp.dto.ProductImageDTO;
 import com.project.shopapp.exceptions.DataNotFoundException;
 import com.project.shopapp.model.ProductImage;
 import com.project.shopapp.model.Products;
+import com.project.shopapp.responses.ProductListResponse;
+import com.project.shopapp.responses.ProductResponse;
 import com.project.shopapp.service.IProductService;
 import com.project.shopapp.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +31,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @RestController
@@ -35,8 +41,18 @@ public class ProductController {
     private final IProductService productService;
 
     @GetMapping()
-    public ResponseEntity<String> getAllProducts(@RequestParam("page") int page, @RequestParam("limit") int limit) {
-        return ResponseEntity.ok(String.format("Hello World, page = %d, limit = %d", page, limit));
+    public ResponseEntity<ProductListResponse> getAllProducts(@RequestParam("page") int page, @RequestParam("limit") int limit) {
+        // Tạo Pageable từ thông tin trang & giới hạn
+        // Page bắt đâu` tu` 0
+        PageRequest pageRequest = PageRequest.of(page, limit, Sort.by("createdAt").descending());
+        Page<ProductResponse> products = productService.getAllProducts(pageRequest);
+        // Lấy tổng số trang
+        int totalPages = products.getTotalPages();
+        List<ProductResponse> products1 = products.getContent();
+        return ResponseEntity.ok(ProductListResponse.builder()
+                        .products(products1)
+                        .totalPage(totalPages)
+                .build());
     }
 
     @GetMapping("/{id}")
@@ -71,12 +87,14 @@ public class ProductController {
         }
     }
     @PostMapping(value = "uploads/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> uploadImage(@PathVariable("id") Long productId,@ModelAttribute("files") List<MultipartFile> files) throws IOException {
+    public ResponseEntity<?> uploadImage(@PathVariable("id") Long productId,@RequestParam("files") List<MultipartFile> files) throws IOException {
         // Nếu không có hình thì null
         try {
             Products existingProduct = productService.getProductsById(productId);
-            files = files == null ? new ArrayList<MultipartFile>() : files;
-            if(files.size() >= ProductImage.MAXIMUM_IMAGES_PER_PRODUCT){
+            //files = files == null ? new ArrayList<MultipartFile>() : files;
+            files = files == null ? new ArrayList<>() : new ArrayList<>(files);
+            int numberOfFiles = files == null ? 0 : files.size();
+            if(numberOfFiles >= ProductImage.MAXIMUM_IMAGES_PER_PRODUCT){
                 return ResponseEntity.badRequest().body("You can only upload more than 5 images");
             }
             List<ProductImage> productImages = new ArrayList<>();
@@ -110,7 +128,10 @@ public class ProductController {
     }
 
     private String storeFile(MultipartFile file) throws IOException {
-        String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+        if(!isImageFile(file) && file.getOriginalFilename() == null ){
+            throw new IOException("Invalid image file");
+        }
+        String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
         // Thêm UUID vào trước mỗi hình để tránh việc ghì đè bởi hình ảnh có tên giống nhau mà nội dung khác nhau
         String uniqueName = UUID.randomUUID().toString() + "_" + fileName;
         // Thêm đường dẫn đến thư mục muốn lưu file
@@ -124,6 +145,11 @@ public class ProductController {
         // Copy file vào thư mục
         Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
         return uniqueName;
+    }
+
+    private boolean isImageFile(MultipartFile file) {
+        String contentType = file.getContentType();
+        return contentType == null || !contentType.startsWith("image/");
     }
 
     @PutMapping("/{id}")

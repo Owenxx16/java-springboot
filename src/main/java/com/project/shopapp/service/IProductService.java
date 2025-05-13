@@ -5,6 +5,7 @@ import com.project.shopapp.dto.ProductImageDTO;
 import com.project.shopapp.exceptions.DataNotFoundException;
 import com.project.shopapp.model.ProductImage;
 import com.project.shopapp.model.Products;
+import com.project.shopapp.responses.ProductResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -13,7 +14,7 @@ import org.springframework.data.domain.Pageable;
 public interface IProductService {
     Products addProduct(ProductDTO productDTO) throws Exception;
     Products getProductsById(Long id) throws DataNotFoundException;
-    Page<Products> getAllProducts(Pageable pageable);
+    Page<ProductResponse> getAllProducts(Pageable pageable);
     void deleteProduct(Long id);
     public Products updateProduct(Long id, ProductDTO productDTO) throws DataNotFoundException;
     boolean existsByName(String name);

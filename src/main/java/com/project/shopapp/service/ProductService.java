@@ -6,6 +6,7 @@ import com.project.shopapp.exceptions.DataNotFoundException;
 import com.project.shopapp.model.Category;
 import com.project.shopapp.model.ProductImage;
 import com.project.shopapp.model.Products;
+import com.project.shopapp.responses.ProductResponse;
 import com.project.shopapp.respository.CategoryRespository;
 import com.project.shopapp.respository.ProductImageRespository;
 import com.project.shopapp.respository.ProductRespository;
@@ -45,8 +46,18 @@ public class ProductService implements IProductService{
     }
 
     @Override
-    public Page<Products> getAllProducts(Pageable pageable) {
-        return productRespository.findAll(pageable);
+    public Page<ProductResponse> getAllProducts(Pageable pageable) {
+        return productRespository.findAll(pageable).map(products ->{
+               ProductResponse productResponse = ProductResponse.builder().name(products.getName())
+                .price(products.getPrice())
+                .thumbnail(products.getThumbnail())
+                .description(products.getDescription())
+                .categoryId(products.getCategoryId().getId())
+                .build();
+               productResponse.setCreated_at(products.getCreatedAt());
+               productResponse.setUpdated_at(products.getUpdatedAt());
+        return productResponse;
+        });
     }
 
     @Override
