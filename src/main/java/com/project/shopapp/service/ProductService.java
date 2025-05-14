@@ -47,17 +47,7 @@ public class ProductService implements IProductService{
 
     @Override
     public Page<ProductResponse> getAllProducts(Pageable pageable) {
-        return productRespository.findAll(pageable).map(products ->{
-               ProductResponse productResponse = ProductResponse.builder().name(products.getName())
-                .price(products.getPrice())
-                .thumbnail(products.getThumbnail())
-                .description(products.getDescription())
-                .categoryId(products.getCategoryId().getId())
-                .build();
-               productResponse.setCreated_at(products.getCreatedAt());
-               productResponse.setUpdated_at(products.getUpdatedAt());
-        return productResponse;
-        });
+        return productRespository.findAll(pageable).map(ProductResponse::fromProduct);
     }
 
     @Override
