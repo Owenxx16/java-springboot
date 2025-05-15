@@ -1,4 +1,4 @@
-package com.project.shopapp.dto;
+package com.project.shopapp.responses;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Min;
@@ -10,29 +10,24 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
 @Getter
 @Setter
-public class OrderDTO {
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class OrderResponse extends BaseResponse {
+    private Long id;
+
     @JsonProperty("user_id")
-    @Min(value = 1, message = "User's ID must be > 0")
     private Long userId;
 
     @JsonProperty("fullname")
     private String fullName;
-
     private String email;
 
-    @JsonProperty("phone")
-    @NotBlank(message = "Phone number is required")
-    @Size(min = 10, max = 10, message = "SDT phai co 10 so")
+    @JsonProperty("phone_number")
     private String phoneNumber;
-
     private String address;
-
     private String note;
 
     @JsonProperty("order_date")
@@ -41,7 +36,6 @@ public class OrderDTO {
     private String status;
 
     @JsonProperty("total_money")
-    @Min(value = 0, message = "Total money must be >= 0")
     private Float totalMoney;
 
     @JsonProperty("shipping_method")
@@ -53,8 +47,11 @@ public class OrderDTO {
     @JsonProperty("shipping_date")
     private LocalDate shippingDate;
 
+    @JsonProperty("tracking_number")
+    private String trackingNumber;
+
     @JsonProperty("payment_method")
     private String paymentMethod;
 
-
+    private boolean active;
 }
