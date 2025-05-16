@@ -10,12 +10,14 @@ import com.project.shopapp.respository.OrderRespository;
 import com.project.shopapp.respository.UserRespository;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.aspectj.weaver.ast.Or;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -57,17 +59,45 @@ public class OrderService implements IOrderService {
 
     @Override
     public Order getOrderById(Long id) {
-        return null;
+        Optional<Order> order = orderRespository.findById(id);
+        String errorMessage = "Nothing found with id " + id;
+        if(order.isPresent()) {
+            return order.get();
+        }else {
+            return null;
+        }
     }
 
     @Override
-    public Order updateOrder(Long id, OrderDTO orderDTO) {
-        return null;
+    public Order updateOrder(Long id, OrderDTO orderDTO) throws DataNotFoundException {
+        Order existingOrder = orderRespository.findById(id).orElseThrow(() -> new DataNotFoundException("Order ID not found"));
+        User existingUser = userRespository.findById(orderDTO.getUserId()).orElseThrow(() -> new DataNotFoundException("User ID not found"));
+        // anh xa.
+        modelMapper.typeMap(OrderDTO.class, Order.class).addMappings(mapper -> mapper.skip(Order::setId));
+        // Cap Nhat cac truong tu OrderDTO
+        modelMapper.map(orderDTO, existingOrder);
+        existingOrder.setUser(existingUser);
+        return orderRespository.save(existingOrder);
     }
 
     @Override
     public List<Order> getAllOrders() {
-        return List.of();
+        return orderRespository.findAll();
+    }
+
+    @Override
+    public List<Order> getOrdersByUserId(Long userId) {
+        return orderRespository.findByUserId(userId);
+    }
+
+    @Override
+    public void deleteOrder(Long id) {
+        Order optionalOrder = orderRespository.findById(id).orElse(null);
+        // khong xoa cung => xoa mem
+        if(optionalOrder !=null) {
+            optionalOrder.setActive(false);
+            orderRespository.save(optionalOrder);
+        }
     }
 //    @Override
 //    public OrderResponse createOrder(OrderDTO orderDTO) throws DataNotFoundException {
