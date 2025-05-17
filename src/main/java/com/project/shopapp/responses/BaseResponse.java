@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 @MappedSuperclass
 @AllArgsConstructor
 @NoArgsConstructor
-
 public class BaseResponse {
 
     @JsonProperty("created_at")

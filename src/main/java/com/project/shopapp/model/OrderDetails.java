@@ -22,8 +22,12 @@ public class OrderDetails {
     private Order order;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @JoinColumn(name = "product_id")
+    private Products product;
+
+//    @ManyToOne
+//    @JoinColumn(name = "user_id")
+//    private User user;
 
     @Column(name = "price", nullable = false)
     private Float price;
