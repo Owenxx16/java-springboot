@@ -22,7 +22,7 @@ public class UserService implements IUserService {
     public User createUser(UserDTO userDTO) throws DataNotFoundException {
         String phoneNumber = userDTO.getPhoneNumber();
         // check phonenumber if it exists
-        if(userRespository.existsByPhoneNumber(phoneNumber)) {
+            if(userRespository.existsByPhoneNumber(phoneNumber)) {
             throw new DataNotFoundException("Phone number already exists");
         }
         // convert userDTO => user
